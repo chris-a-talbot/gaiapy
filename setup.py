@@ -14,7 +14,7 @@ setup(
     description="Geographic Ancestry Inference Algorithm - Python implementation",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/gaiapy",
+    url="https://github.com/chtalbot/gaia",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",

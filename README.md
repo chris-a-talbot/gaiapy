@@ -100,7 +100,7 @@ locations_lin = gaiapy.linear_mpr_minimize(mpr_lin)
 
 ## References
 
-Grundler et al. (2024) A geographic history of human genetic ancestry. bioRxiv doi: 10.1101/2024.03.27.586858
+Grundler, M.C., Terhorst, J., and Bradburd, G.S. (2025) A geographic history of human genetic ancestry. *Science* 387(6741): 1391-1397. DOI: [10.1126/science.adp4642](https://doi.org/10.1126/science.adp4642)
 
 ## License
 

@@ -35,6 +35,6 @@ dev = ["pytest", "pytest-cov", "black", "flake8"]
 docs = ["sphinx", "sphinx-rtd-theme"]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/gaiapy"
-Repository = "https://github.com/yourusername/gaiapy"
-Issues = "https://github.com/yourusername/gaiapy/issues"
+Homepage = "https://github.com/chtalbot/gaia"
+Repository = "https://github.com/chtalbot/gaia"
+Issues = "https://github.com/chtalbot/gaia/issues"

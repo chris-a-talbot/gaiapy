@@ -2,7 +2,9 @@
 
 `gaiapy` is a Python port of the GAIA R package for inferring the geographic locations of genetic ancestors using tree sequences. This package implements generalized parsimony methods for ancestral location reconstruction in continuous geographic space.
 
-**Note**: This package is distributed on PyPI as `geoancestry`.
+**Note**: This implementation is under active development. Use the `R` implementation for all scientific applications.
+
+**Note**: This package is distributed on PyPI as `geoancestry` but the module name is `gaiapy`.
 
 ## Current Implementation Status
 
@@ -38,7 +40,7 @@ pip install -e ".[dev]"
 ### Basic Continuous Space Reconstruction
 
 ```python
-import geoancestry as gp
+import gaiapy as gp
 import tskit
 import numpy as np
 

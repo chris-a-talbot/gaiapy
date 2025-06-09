@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gaiapy"
+version = "0.1.0"
+description = "Geographic Ancestry Inference Algorithm - Python implementation"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Adapted from Michael C. Grundler's GAIA R package"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20.0",
+    "tskit>=0.5.0",
+    "scipy>=1.7.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "black", "flake8"]
+docs = ["sphinx", "sphinx-rtd-theme"]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/gaiapy"
+Repository = "https://github.com/yourusername/gaiapy"
+Issues = "https://github.com/yourusername/gaiapy/issues"

@@ -2,7 +2,7 @@
 
 `gaiapy` is a Python port of the GAIA R package for inferring the geographic locations of genetic ancestors using tree sequences. This package implements generalized parsimony methods for ancestral location reconstruction in continuous geographic space.
 
-**Note**: This package is distributed on PyPI as `geoancestry` but the project and module name remain `gaiapy`.
+**Note**: This package is distributed on PyPI as `geoancestry`.
 
 ## Current Implementation Status
 
@@ -132,14 +132,6 @@ Reconstructed locations are returned as NumPy arrays with shape `(n_nodes, 2)` w
 - Row index corresponds to tree sequence node ID
 - Column 0: x-coordinate of reconstructed location
 - Column 1: y-coordinate of reconstructed location
-
-## Differences from R Version
-
-- Uses 0-based indexing throughout (consistent with Python/tskit conventions)
-- Returns NumPy arrays instead of R matrices/data frames
-- Leverages tskit Python API directly instead of C wrappers
-- More Pythonic API design and error handling
-- Enhanced metadata integration capabilities
 
 ## Coming Soon
 

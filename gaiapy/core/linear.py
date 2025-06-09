@@ -632,17 +632,18 @@ def linear_mpr(ts: tskit.TreeSequence,
     return mpr.compute_mpr()
 
 
-def linear_mpr_minimize(mpr_result: MPRResult) -> np.ndarray:
+def linear_mpr_minimize(mpr_result: MPRResult, random_seed: Optional[int] = None) -> np.ndarray:
     """
     Find optimal continuous locations from linear MPR results.
     
     For each node, finds the location that minimizes the piecewise linear cost function.
-    When there are tied optima (flat regions), randomly selects within the optimal region.
-    
-    This implementation matches the R C code exactly, including its reservoir sampling.
+    When there are tied optima (flat regions), randomly selects within the optimal region
+    using reservoir sampling to match the R implementation.
     
     Args:
         mpr_result: Result from linear_mpr()
+        random_seed: Optional random seed for reproducible results. If None, uses
+                    current random state (matching R's non-deterministic behavior)
         
     Returns:
         Array of optimal (x, y, ...) coordinates for each node
@@ -656,8 +657,9 @@ def linear_mpr_minimize(mpr_result: MPRResult) -> np.ndarray:
     
     optimal_locations = np.zeros((num_nodes, num_dims))
     
-    # Use seed 1 to match R's behavior
-    np.random.seed(1)
+    # Set random seed only if specified (for testing), otherwise use current state
+    if random_seed is not None:
+        np.random.seed(random_seed)
     
     # Match R's nested loop structure: for j (dims), for i (nodes)
     for j in range(num_dims):  # R's outer loop: dimensions
@@ -702,6 +704,7 @@ def linear_mpr_minimize(mpr_result: MPRResult) -> np.ndarray:
                 k += 1
                 prob = 1.0 / l
                 
+                # Use random sampling (not seeded) to match R's non-deterministic behavior
                 if np.random.random() < prob:
                     if k < len(breakpoints):
                         x_val = breakpoints[k]
@@ -791,3 +794,103 @@ def linear_mpr_minimize_discrete(mpr_result: MPRResult,
         optimal_indices[node] = best_site + 1  # Convert to 1-based for R compatibility
     
     return optimal_indices
+
+
+def linear_mpr_debug_minimize(mpr_result: MPRResult, n_runs: int = 100) -> dict:
+    """
+    Debug helper for linear MPR minimize function.
+    
+    Runs the minimize function multiple times to analyze the variance
+    and identify which nodes have non-deterministic results due to ties.
+    
+    Args:
+        mpr_result: Result from linear_mpr()
+        n_runs: Number of runs to perform
+        
+    Returns:
+        Dictionary with debug information including:
+        - mean_locations: Mean location across all runs
+        - std_locations: Standard deviation across all runs  
+        - tie_nodes: Nodes that have ties (non-zero variance)
+        - deterministic_nodes: Nodes with deterministic results
+        - all_results: All results from n_runs
+    """
+    if mpr_result.reconstruction_type != "linear":
+        raise ValueError("Expected linear MPR result")
+    
+    num_nodes = mpr_result.num_nodes
+    num_dims = mpr_result.mpr_matrix.shape[1]
+    
+    # Collect results from multiple runs
+    all_results = []
+    for run in range(n_runs):
+        result = linear_mpr_minimize(mpr_result, random_seed=None)
+        all_results.append(result)
+    
+    all_results = np.array(all_results)  # Shape: (n_runs, num_nodes, num_dims)
+    
+    # Calculate statistics
+    mean_locations = np.mean(all_results, axis=0)
+    std_locations = np.std(all_results, axis=0)
+    
+    # Identify nodes with ties (non-zero variance)
+    tolerance = 1e-10
+    has_variance = np.any(std_locations > tolerance, axis=1)
+    tie_nodes = np.where(has_variance)[0]
+    deterministic_nodes = np.where(~has_variance)[0]
+    
+    return {
+        'mean_locations': mean_locations,
+        'std_locations': std_locations,
+        'tie_nodes': tie_nodes.tolist(),
+        'deterministic_nodes': deterministic_nodes.tolist(),
+        'all_results': all_results,
+        'n_runs': n_runs
+    }
+
+
+def compare_linear_with_r_debug(python_result: MPRResult, r_locations: np.ndarray, 
+                               n_runs: int = 100, tolerance: float = 1e-12) -> dict:
+    """
+    Compare Python linear MPR results with R results, accounting for randomness.
+    
+    Args:
+        python_result: Python MPR result
+        r_locations: R minimize result array
+        n_runs: Number of Python runs to perform
+        tolerance: Numerical tolerance for comparisons
+        
+    Returns:
+        Dictionary with comparison results
+    """
+    debug_info = linear_mpr_debug_minimize(python_result, n_runs)
+    
+    # Check if R result is within the range of Python results
+    all_python_results = debug_info['all_results']
+    
+    matches_any_python = []
+    for run_idx in range(n_runs):
+        python_run = all_python_results[run_idx]
+        max_diff = np.max(np.abs(python_run - r_locations))
+        matches_any_python.append(max_diff < tolerance)
+    
+    # Summary statistics
+    min_diff_across_runs = []
+    for run_idx in range(n_runs):
+        python_run = all_python_results[run_idx]
+        diff = np.max(np.abs(python_run - r_locations))
+        min_diff_across_runs.append(diff)
+    
+    min_overall_diff = np.min(min_diff_across_runs)
+    best_match_run = np.argmin(min_diff_across_runs)
+    
+    return {
+        'debug_info': debug_info,
+        'r_locations': r_locations,
+        'matches_any_python': any(matches_any_python),
+        'n_matching_runs': sum(matches_any_python),
+        'min_overall_diff': min_overall_diff,
+        'best_match_run': best_match_run,
+        'best_python_result': all_python_results[best_match_run],
+        'tolerance': tolerance
+    }

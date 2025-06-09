@@ -516,8 +516,7 @@ def compare_linear_results(r_results, py_results, tolerance=1e-12):
             
             # Special handling for locations_no_bl - R minimize function has bugs
             if key == 'locations_no_bl':
-                print(f"    NOTE: R's linear_mpr_minimize has known bugs for no-branch-lengths case")
-                print(f"         Comparing only sample nodes (first 6 values) which should be zero")
+                print(f"  Comparing only sample nodes (first 6 values) which should be zero")
                 # Only compare the first 6 values (sample nodes should be zero)
                 sample_diff = np.max(np.abs(r_arr_clean[:6] - py_arr[:6]))
                 print(f"         Sample node diff: {sample_diff:.2e} (tolerance: {tolerance:.2e})")

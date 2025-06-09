@@ -17,7 +17,7 @@
 - **Ancestry coefficients** - temporal analysis of ancestry proportions (coming soon)  
 - **Migration flux** - migration flow analysis between regions (coming soon)
 
-This package leverages the Python `tskit` API directly, avoiding the need for C wrappers and making the implementation more accessible and maintainable.
+This package leverages the Python `tskit` API directly, avoiding the need for C wrappers and making the implementation more accessible for Python users and web applications.
 
 ## Installation
 

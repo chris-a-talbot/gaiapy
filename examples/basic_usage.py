@@ -8,7 +8,7 @@ ancestry inference using a simple simulated tree sequence.
 import numpy as np
 import tskit
 import msprime
-import gaiapy
+import geoancestry as gp
 
 
 def create_example_tree_sequence():
@@ -57,18 +57,18 @@ def basic_discrete_example():
     
     # Compute discrete MPR
     try:
-        mpr_result = gaiapy.discrete_mpr(ts, sample_locations, cost_matrix)
+        mpr_result = gp.discrete_mpr(ts, sample_locations, cost_matrix)
         print(f"\nMPR Result: {mpr_result}")
         print(f"Mean tree length: {mpr_result.mean_tree_length:.4f}")
         
         # Get optimal state assignments
-        optimal_states = gaiapy.discrete_mpr_minimize(mpr_result)
+        optimal_states = gp.discrete_mpr_minimize(mpr_result)
         print(f"\nOptimal state assignments:")
         for node in range(ts.num_nodes):
             print(f"  Node {node}: state {optimal_states[node]}")
         
         # Get migration histories
-        history = gaiapy.discrete_mpr_edge_history(ts, mpr_result, cost_matrix)
+        history = gp.discrete_mpr_edge_history(ts, mpr_result, cost_matrix)
         print(f"\nMigration histories: {len(history['paths'])} edges processed")
         
         print("\n=== Example completed successfully! ===")
@@ -93,11 +93,11 @@ def compare_with_branch_lengths():
     cost_matrix = np.array([[0, 1], [1, 0]])
     
     # Without branch lengths
-    mpr_no_bl = gaiapy.discrete_mpr(ts, sample_locations, cost_matrix, 
+    mpr_no_bl = gp.discrete_mpr(ts, sample_locations, cost_matrix, 
                                    use_branch_lengths=False)
     
     # With branch lengths  
-    mpr_with_bl = gaiapy.discrete_mpr(ts, sample_locations, cost_matrix,
+    mpr_with_bl = gp.discrete_mpr(ts, sample_locations, cost_matrix,
                                      use_branch_lengths=True)
     
     print(f"Mean tree length without branch lengths: {mpr_no_bl.mean_tree_length:.4f}")

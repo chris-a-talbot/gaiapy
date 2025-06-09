@@ -3,18 +3,17 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gaiapy"
+name = "geoancestry"
 version = "0.1.0"
-description = "Geographic Ancestry Inference Algorithm - Python implementation"
+description = "Geographic Ancestry Inference Algorithm - Python implementation (continuous space parsimony methods)"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Adapted from Michael C. Grundler's GAIA R package"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -35,6 +34,6 @@ dev = ["pytest", "pytest-cov", "black", "flake8"]
 docs = ["sphinx", "sphinx-rtd-theme"]
 
 [project.urls]
-Homepage = "https://github.com/chtalbot/gaia"
-Repository = "https://github.com/chtalbot/gaia"
-Issues = "https://github.com/chtalbot/gaia/issues"
+Homepage = "https://github.com/chris-a-talbot/gaiapy"
+Repository = "https://github.com/chris-a-talbot/gaiapy"
+Issues = "https://github.com/chris-a-talbot/gaiapy/issues"

@@ -121,20 +121,36 @@ class QuadraticMPR(SankoffTree):
         self.sample_locations = np.asarray(sample_locations)
         if self.sample_locations.shape[1] < 3:
             raise ValueError("sample_locations must have at least 3 columns (node_id, x, y)")
-        
+
+        # Determine dimensions and parameter count
         self.num_dims = self.sample_locations.shape[1] - 1  # Subtract node_id column
         self.num_pars = self.num_dims + 2  # p0, p1, ..., pn, p_const
-        
-        # Create lookup for sample coordinates
-        self.sample_coords = {}
-        for row in self.sample_locations:
-            node_id = int(row[0])
-            coords = row[1:1+self.num_dims]
-            self.sample_coords[node_id] = coords
+
+        # Build dense per-node coordinate matrix x (num_nodes x num_dims)
+        self.x = np.zeros((self.num_nodes, self.num_dims), dtype=float)
+
+        # Validate that all samples have provided coordinates and populate x
+        provided_nodes = self.sample_locations[:, 0].astype(int)
+        if not np.all(provided_nodes == np.round(provided_nodes)):
+            raise ValueError("sample_locations node_id must be integers")
+        if np.any(provided_nodes < 0) or np.any(provided_nodes >= self.num_nodes):
+            raise ValueError("sample_locations node_id out of range")
+        if len(np.unique(provided_nodes)) != len(provided_nodes):
+            raise ValueError("Duplicate node_id entries in sample_locations")
+
+        # Check every sample in the tree sequence has coordinates
+        ts_sample_ids = np.array(list(self.ts.samples()), dtype=int)
+        missing = np.setdiff1d(ts_sample_ids, provided_nodes, assume_unique=False)
+        if missing.size > 0:
+            raise ValueError(f"Missing coordinates for sample node IDs: {missing.tolist()}")
+
+        # Populate x for provided nodes
+        self.x[provided_nodes] = self.sample_locations[:, 1:1+self.num_dims]
         
         # Initialize result storage
         self.node_weights = np.zeros(self.num_nodes)
-        self.F = np.zeros((self.num_nodes, self.num_pars))  # Final averaged costs
+        # Final averaged costs in R orientation: (num_pars, num_nodes)
+        self.F = np.zeros((self.num_pars, self.num_nodes))
         self.tree_lengths = []
         self.tree_weights = []
     
@@ -181,7 +197,7 @@ class QuadraticMPR(SankoffTree):
             num_nodes=self.num_nodes,
             num_trees=len(self.tree_lengths),
             sample_locations=self.sample_locations.copy(),
-            sample_node_ids=np.array(list(self.sample_coords.keys()))
+            sample_node_ids=np.array(list(self.ts.samples()), dtype=int)
         )
     
     def _sankoff_algorithm(self, tree: tskit.Tree, g: np.ndarray, h: np.ndarray, f: np.ndarray):
@@ -251,23 +267,17 @@ class QuadraticMPR(SankoffTree):
             v_time = tree.time(v)
             if u_time is not None and v_time is not None:
                 b = u_time - v_time
-                if b <= 0:
-                    b = 1.0
         
         if tree.is_sample(v):
-            # Sample node case
-            if v in self.sample_coords:
-                x_v = self.sample_coords[v]
-                
-                # h_v(x) = (1/b) * ||x - x_v||²
-                h[v, 0] = 1.0 / b  # Quadratic coefficient
-                h[v, 1:self.num_dims+1] = -2.0 * x_v / b  # Linear coefficients
-                h[v, -1] = np.sum(x_v * x_v) / b  # Constant term
+            # Sample node case: coordinates from dense x matrix
+            x_v = self.x[v]
+            # h_v(x) = (1/b) * ||x - x_v||²
+            h[v, 0] = 1.0 / b  # Quadratic coefficient
+            h[v, 1:self.num_dims+1] = -2.0 * x_v / b  # Linear coefficients
+            h[v, -1] = np.sum(x_v * x_v) / b  # Constant term
         else:
             # Internal node case
             p0 = g[v, 0]
-            if p0 <= 0:
-                p0 = 1e-10  # Avoid division by zero
             
             denominator = b * p0 + 1
             h[v, 0] = p0 / denominator
@@ -297,13 +307,9 @@ class QuadraticMPR(SankoffTree):
             v_time = tree.time(v)
             if u_time is not None and v_time is not None:
                 b = u_time - v_time
-                if b <= 0:
-                    b = 1.0
         
         # Combine parent's final cost with edge cost
         p0 = f[u, 0] - h[v, 0]
-        if p0 <= 0:
-            p0 = 1e-10
         
         denominator = b * p0 + 1
         f[v, 0] = p0 / denominator
@@ -331,13 +337,12 @@ class QuadraticMPR(SankoffTree):
         for root in tree.roots:
             if not tree.is_sample(root):
                 p0 = g[root, 0]
-                if p0 > 0:
-                    # Minimum of quadratic: g[num_dims1] - sum(g[i]²)/(4*g[0])
-                    # where num_dims1 = num_dims + 1 (constant term index)
-                    constant_term = g[root, -1]  # g[num_dims1] 
-                    linear_coeffs = g[root, 1:self.num_dims+1]  # g[1] to g[num_dims]
-                    min_val = constant_term - np.sum(linear_coeffs * linear_coeffs) / (4 * p0)
-                    total_length += min_val
+                # Minimum of quadratic: g[num_dims1] - sum(g[i]²)/(4*g[0])
+                # where num_dims1 = num_dims + 1 (constant term index)
+                constant_term = g[root, -1]  # g[num_dims1]
+                linear_coeffs = g[root, 1:self.num_dims+1]  # g[1] to g[num_dims]
+                min_val = constant_term - np.sum(linear_coeffs * linear_coeffs) / (4 * p0)
+                total_length += min_val
         
         # Divide by number of edges in the tree (matches C implementation)
         num_edges = tree.num_edges
@@ -347,11 +352,11 @@ class QuadraticMPR(SankoffTree):
         """Update running averages for node costs."""
         for node in tree.nodes():
             self.node_weights[node] += tree_span
-            
+
             if self.node_weights[node] > 0:
-                # Update running average
+                # Update running average, writing column-wise per node
                 weight = tree_span / self.node_weights[node]
-                self.F[node] = (1 - weight) * self.F[node] + weight * f[node]
+                self.F[:, node] = (1 - weight) * self.F[:, node] + weight * f[node]
 
 
 def quadratic_mpr(ts: tskit.TreeSequence,
@@ -386,22 +391,17 @@ def quadratic_mpr_minimize(mpr_result: MPRResult) -> np.ndarray:
         raise ValueError("Expected quadratic MPR result")
     
     num_nodes = mpr_result.num_nodes
-    num_params = mpr_result.mpr_matrix.shape[1]
-    num_dims = num_params - 2  # Subtract quadratic coeff and constant
+    num_params = mpr_result.mpr_matrix.shape[0]  # (num_pars, num_nodes)
+    num_dims = num_params - 2
     
     optimal_locations = np.zeros((num_nodes, num_dims))
     
     for node in range(num_nodes):
-        params = mpr_result.mpr_matrix[node]
-        p0 = params[0]  # Quadratic coefficient
-        
-        if p0 > 0:
-            # Optimal point: x_i = -p_i / (2 * p0)
-            linear_coeffs = params[1:num_dims+1]
-            optimal_locations[node] = -linear_coeffs / (2 * p0)
-        else:
-            # Degenerate case - use zero location
-            optimal_locations[node] = np.zeros(num_dims)
+        params = mpr_result.mpr_matrix[:, node]
+        p0 = params[0]
+
+        linear_coeffs = params[1:num_dims+1]
+        optimal_locations[node] = -linear_coeffs / (2 * p0)
     
     return optimal_locations
 
@@ -422,28 +422,27 @@ def quadratic_mpr_minimize_discrete(mpr_result: MPRResult,
         raise ValueError("Expected quadratic MPR result")
     
     num_nodes = mpr_result.num_nodes
-    num_params = mpr_result.mpr_matrix.shape[1]
+    num_params = mpr_result.mpr_matrix.shape[0]
     num_dims = num_params - 2
     num_sites = candidate_sites.shape[0]
     
     optimal_indices = np.zeros(num_nodes, dtype=int)
     
     for node in range(num_nodes):
-        params = mpr_result.mpr_matrix[node]
-        p0 = params[0]  # Quadratic coefficient
-        
+        params = mpr_result.mpr_matrix[:, node]
+        p0 = params[0]
+
         # Evaluate function at all candidate sites
         min_cost = np.inf
         best_site = 0
-        
+
         for site_idx in range(num_sites):
             site_coords = candidate_sites[site_idx]
-            
-            # Evaluate quadratic function
+
             quad_term = p0 * np.sum(site_coords * site_coords)
             linear_term = np.sum(params[1:num_dims+1] * site_coords)
             cost = quad_term + linear_term + params[-1]
-            
+
             if cost < min_cost:
                 min_cost = cost
                 best_site = site_idx

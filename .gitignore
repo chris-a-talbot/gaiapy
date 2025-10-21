@@ -149,3 +149,5 @@ Thumbs.db
 *.ts
 data/
 results/
+helpers/
+docs/

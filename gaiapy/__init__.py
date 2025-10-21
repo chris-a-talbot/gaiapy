@@ -8,9 +8,9 @@ This package implements discrete and continuous space ancestry reconstruction
 algorithms with full support for tree sequence metadata integration.
 """
 
-__version__ = "0.1.0"
-__author__ = "Your Name"
-__email__ = "your.email@example.com"
+__version__ = "0.1.1"
+__author__ = "Chris Talbot"
+__email__ = "christopher.a.talbot@gmail.com"
 
 # Import main API functions
 from .api import (

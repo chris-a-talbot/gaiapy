@@ -68,14 +68,12 @@ main <- function() {
   # Add node_id (0-based)
   locations_dt[, ("node_id") := .I - 1L]
 
-  # Filter out sample nodes
-  sample_nodes <- as.integer(sample_dt$node_id)
-  filtered_locations <- locations_dt[!(get("node_id") %in% sample_nodes)]
-  data.table::setcolorder(filtered_locations, c("node_id", "x", "y", "z"))
+  # Keep all nodes (including samples) for comparison testing
+  data.table::setcolorder(locations_dt, c("node_id", "x", "y", "z"))
 
-  # Save
+  # Save all nodes (samples will be filtered in Python comparison if needed)
   dir.create(dirname(opts$out_csv), recursive = TRUE, showWarnings = FALSE)
-  data.table::fwrite(filtered_locations, opts$out_csv)
+  data.table::fwrite(locations_dt, opts$out_csv)
   if (opts$verbose) message(sprintf("[run_gaia] Wrote %s", opts$out_csv))
 }
 
@@ -85,5 +83,6 @@ tryCatch({
   message(sprintf("[run_gaia] ERROR: %s", e$message))
   q(status = 1, save = "no")
 })
+
 
 

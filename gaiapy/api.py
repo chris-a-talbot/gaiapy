@@ -276,18 +276,29 @@ def quadratic_mpr(ts: tskit.TreeSequence,
     return _quadratic_mpr(ts, sample_locations, use_branch_lengths)
 
 
-def quadratic_mpr_minimize(mpr_result: MPRResult) -> np.ndarray:
+def quadratic_mpr_minimize(mpr_result: MPRResult, preserve_sample_locations: bool = False) -> np.ndarray:
     """
     Find optimal continuous locations from quadratic MPR results.
     
     Args:
         mpr_result: Result from quadratic_mpr()
+        preserve_sample_locations: If True, replace optimized sample node locations
+                                  with their original input locations. The algorithm
+                                  still runs the same way, but output is modified
+                                  at output time. Default is False (output optimized
+                                  locations for all nodes, matching R behavior).
     
     Returns:
         Array of optimal (x, y) coordinates for each node
+        
+    Notes:
+        By default, this function optimizes locations for all nodes including samples,
+        which may differ from the input sample locations. This matches the behavior
+        of the R implementation. Set preserve_sample_locations=True to keep original
+        sample locations in the output.
     """
     
-    return _quadratic_mpr_minimize(mpr_result)
+    return _quadratic_mpr_minimize(mpr_result, preserve_sample_locations)
 
 
 def quadratic_mpr_minimize_discrete(mpr_result: MPRResult, 

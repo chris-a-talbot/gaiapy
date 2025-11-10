@@ -377,12 +377,17 @@ def quadratic_mpr(ts: tskit.TreeSequence,
     return mpr.compute_mpr()
 
 
-def quadratic_mpr_minimize(mpr_result: MPRResult) -> np.ndarray:
+def quadratic_mpr_minimize(mpr_result: MPRResult, preserve_sample_locations: bool = False) -> np.ndarray:
     """
     Find optimal locations by minimizing quadratic functions.
     
     Args:
         mpr_result: Result from quadratic_mpr()
+        preserve_sample_locations: If True, replace optimized sample node locations
+                                  with their original input locations. The algorithm
+                                  still runs the same way, but output is modified
+                                  at output time. Default is False (output optimized
+                                  locations for all nodes, matching R behavior).
         
     Returns:
         Array of optimal (x, y, ...) coordinates for each node
@@ -402,6 +407,14 @@ def quadratic_mpr_minimize(mpr_result: MPRResult) -> np.ndarray:
 
         linear_coeffs = params[1:num_dims+1]
         optimal_locations[node] = -linear_coeffs / (2 * p0)
+    
+    # Optionally restore original sample locations
+    if preserve_sample_locations and mpr_result.sample_locations is not None:
+        sample_locs = mpr_result.sample_locations
+        sample_node_ids = sample_locs[:, 0].astype(int)
+        # Replace optimized sample locations with original ones
+        for i, node_id in enumerate(sample_node_ids):
+            optimal_locations[node_id] = sample_locs[i, 1:1+num_dims]
     
     return optimal_locations
 

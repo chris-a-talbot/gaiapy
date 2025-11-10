@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geoancestry"
-version = "0.1.1"
+version = "0.1.2"
 description = "Geographic Ancestry Inference Algorithm - Python implementation (continuous space parsimony methods)"
 readme = "README.md"
 license = "MIT"

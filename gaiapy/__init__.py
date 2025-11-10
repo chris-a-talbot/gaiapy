@@ -8,7 +8,7 @@ This package implements discrete and continuous space ancestry reconstruction
 algorithms with full support for tree sequence metadata integration.
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = "Chris Talbot"
 __email__ = "christopher.a.talbot@gmail.com"
 
